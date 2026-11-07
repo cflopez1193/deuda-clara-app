@@ -13,12 +13,15 @@ import { formatMoney } from '@/domain/money';
 import { shareBackupJson, shareTransactionsCsv } from '@/lib/export';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useApp } from '@/providers/app-provider';
+import { useAuth } from '@/providers/auth-provider';
 
 export default function SettingsScreen() {
   const { colors } = useAppTheme();
   const { profile, debts, transactions, categories, exportBackup, resetData } = useApp();
+  const { user, offlineSession, signOut } = useAuth();
   const [exporting, setExporting] = useState<'json' | 'csv' | null>(null);
   const [resetting, setResetting] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const strategyLabel =
     profile?.payoffStrategy === 'snowball' ? 'Bola de nieve' : 'Avalancha';
@@ -38,6 +41,33 @@ export default function SettingsScreen() {
     } finally {
       setExporting(null);
     }
+  };
+
+  const confirmSignOut = () => {
+    Alert.alert(
+      'Cerrar sesión',
+      'Tus datos financieros seguirán guardados en este teléfono. Si más adelante inicias sesión con otra cuenta, se borrarán para proteger tu privacidad.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Cerrar sesión',
+          style: 'destructive',
+          onPress: () => {
+            setSigningOut(true);
+            void signOut()
+              .then(async () => {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              })
+              .catch((cause: unknown) => {
+                const message =
+                  cause instanceof Error ? cause.message : 'No se pudo cerrar la sesión.';
+                Alert.alert('Algo salió mal', message);
+              })
+              .finally(() => setSigningOut(false));
+          },
+        },
+      ]
+    );
   };
 
   const confirmReset = () => {
@@ -93,6 +123,32 @@ export default function SettingsScreen() {
           <Ionicons name="pencil-outline" size={17} color={colors.textSecondary} />
         </View>
       </Card>
+
+      <View style={styles.section}>
+        <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>CUENTA</Text>
+        <Card style={styles.sectionCard}>
+          <SettingsRow
+            icon="mail-outline"
+            color={colors.primary}
+            title={user?.email ?? 'Cuenta verificada'}
+            subtitle={
+              offlineSession
+                ? 'Sesión guardada · sin conexión'
+                : 'Sesión activa en este teléfono'
+            }
+          />
+          <View style={[styles.separator, { backgroundColor: colors.border }]} />
+          <SettingsRow
+            icon="log-out-outline"
+            color={colors.danger}
+            title="Cerrar sesión"
+            subtitle="Tus datos locales se conservan en este teléfono"
+            onPress={confirmSignOut}
+            destructive
+            loading={signingOut}
+          />
+        </Card>
+      </View>
 
       <View style={styles.section}>
         <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>PLAN</Text>

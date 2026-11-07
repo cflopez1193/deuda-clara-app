@@ -10,6 +10,7 @@ import { Screen } from '@/components/ui/screen';
 import { radius, spacing, typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useApp } from '@/providers/app-provider';
+import { useAuth } from '@/providers/auth-provider';
 
 const benefits: { icon: IoniconName; title: string; text: string }[] = [
   {
@@ -32,6 +33,7 @@ const benefits: { icon: IoniconName; title: string; text: string }[] = [
 export default function OnboardingScreen() {
   const { colors } = useAppTheme();
   const { completeOnboarding } = useApp();
+  const { user, signOut } = useAuth();
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
@@ -75,6 +77,21 @@ export default function OnboardingScreen() {
   const continueFromProfile = () => {
     if (!validateProfile()) return;
     setStep(2);
+  };
+
+  const confirmSignOut = () => {
+    Alert.alert(
+      'Cerrar sesión',
+      'Tus datos locales se conservan en este teléfono. Si inicias sesión con otra cuenta, se borrarán para proteger tu privacidad.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Cerrar sesión',
+          style: 'destructive',
+          onPress: () => void signOut(),
+        },
+      ]
+    );
   };
 
   const finish = async () => {
@@ -169,7 +186,7 @@ export default function OnboardingScreen() {
           <View style={[styles.privacy, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Ionicons name="lock-closed-outline" size={17} color={colors.success} />
             <Text style={[styles.privacyText, { color: colors.textSecondary }]}>
-              Tus datos se guardan en tu teléfono. Sin cuentas ni conexión obligatoria.
+              Tu cuenta protege el acceso. Tus datos financieros se guardan en tu teléfono.
             </Text>
           </View>
 
@@ -179,6 +196,15 @@ export default function OnboardingScreen() {
             onPress={() => setStep(1)}
             fullWidth
           />
+
+          <Pressable
+            accessibilityRole="button"
+            onPress={confirmSignOut}
+            style={styles.accountLink}>
+            <Text style={[styles.accountText, { color: colors.textMuted }]}>
+              Sesión iniciada como {user?.email ?? 'tu cuenta'} · Cerrar sesión
+            </Text>
+          </Pressable>
         </View>
       ) : null}
 
@@ -428,6 +454,15 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: typography.tiny,
     lineHeight: 17,
+  },
+  accountLink: {
+    alignSelf: 'center',
+    paddingVertical: spacing.xs,
+  },
+  accountText: {
+    fontSize: typography.tiny,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   form: {
     paddingTop: spacing.lg,

@@ -2,7 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import type { CategoryType } from '@/domain/types';
 
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 
 interface SeedCategory {
   id: string;
@@ -104,6 +104,13 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
         ON categories(type, sort_order);
 
       PRAGMA user_version = 1;
+    `);
+  }
+
+  if (currentVersion < 2) {
+    await db.execAsync(`
+      ALTER TABLE profile ADD COLUMN auth_user_id TEXT;
+      PRAGMA user_version = 2;
     `);
   }
 

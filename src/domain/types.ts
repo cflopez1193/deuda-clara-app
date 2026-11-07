@@ -15,6 +15,7 @@ export type DebtType =
 
 export interface Profile {
   id: number;
+  authUserId: string | null;
   name: string;
   monthlyIncome: number;
   extraDebtPayment: number;

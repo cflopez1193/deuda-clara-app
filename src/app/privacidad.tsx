@@ -13,17 +13,18 @@ const sections: {
 }[] = [
   {
     icon: 'phone-portrait-outline',
-    title: 'Tus datos viven en tu teléfono',
+    title: 'Tus datos financieros viven en tu teléfono',
     paragraphs: [
-      'Esta versión de Deuda Clara funciona sin cuentas y sin conexión a internet. Tu perfil, movimientos y deudas se guardan en una base de datos local dentro de la app.',
-      'No enviamos tu información a un servidor ni la compartimos con terceros.',
+      'Tu perfil, movimientos, deudas y pagos se guardan en una base de datos local dentro de la app. Puedes consultarlos sin conexión una vez que hayas iniciado sesión.',
+      'Para proteger el acceso usamos Supabase, un servicio de autenticación. Allí solo se guarda tu correo y la información técnica de la sesión; nunca tus deudas, movimientos ni ingresos.',
     ],
   },
   {
     icon: 'clipboard-outline',
     title: 'Qué información guardamos',
     paragraphs: [
-      'Guardamos el nombre o apodo que eliges, tu ingreso mensual estimado, tus movimientos, tus deudas, pagos y las preferencias del plan. No solicitamos documentos, números de cuenta ni credenciales bancarias.',
+      'En tu teléfono guardamos el nombre o apodo que eliges, tu ingreso mensual estimado, tus movimientos, tus deudas, pagos y las preferencias del plan. No solicitamos documentos, números de cuenta ni credenciales bancarias.',
+      'En Supabase guardamos tu dirección de correo y los datos necesarios para enviarte el código de acceso y mantener tu sesión activa.',
     ],
   },
   {
@@ -32,13 +33,15 @@ const sections: {
     paragraphs: [
       'Puedes exportar un respaldo JSON o un archivo CSV desde Ajustes. Esos archivos quedan bajo tu control cuando los compartes.',
       'También puedes borrar toda la información desde Ajustes. La eliminación es inmediata y definitiva en este dispositivo. Si no tienes un respaldo, no podremos recuperarla.',
+      'Cerrar sesión no borra tus datos locales. Si otra cuenta inicia sesión en el mismo teléfono, los datos de la cuenta anterior se eliminan para evitar que se mezclen.',
     ],
   },
   {
     icon: 'lock-closed-outline',
     title: 'Seguridad',
     paragraphs: [
-      'Recomendamos proteger tu teléfono con PIN, patrón o huella. En una versión futura agregaremos bloqueo biométrico dentro de la app y cifrado de la base local.',
+      'Recomendamos proteger tu teléfono con PIN, patrón o huella. La sesión se guarda en el almacenamiento local de la app y se renueva automáticamente cuando hay conexión.',
+      'En una versión futura agregaremos bloqueo biométrico dentro de la app y cifrado de la base local.',
       'La app nunca te pedirá tu clave bancaria ni el número completo de una tarjeta.',
     ],
   },
@@ -46,15 +49,15 @@ const sections: {
     icon: 'cloud-outline',
     title: 'Sincronización futura',
     paragraphs: [
-      'Cuando habilitemos espacios compartidos, te pediremos autorización antes de enviar datos a la nube. Esa versión tendrá política de privacidad, controles de acceso y opción de eliminar la cuenta.',
+      'Hoy solo tu correo de acceso viaja a la nube. Cuando habilitemos el espacio Hogar y la sincronización, te pediremos autorización antes de enviar datos financieros y aplicaremos controles de acceso por usuario.',
     ],
   },
   {
     icon: 'information-circle-outline',
     title: 'Tus derechos en Colombia',
     paragraphs: [
-      'La Ley 1581 de 2012 y el Decreto 1377 de 2013 protegen tus datos personales. Como esta versión no transmite datos a un responsable remoto, el control principal está en tu dispositivo.',
-      'Antes de publicar una versión con cuentas en la nube, Deuda Clara dispondrá de canales de atención y procedimientos para conocer, actualizar, rectificar y suprimir tus datos.',
+      'La Ley 1581 de 2012 y el Decreto 1377 de 2013 protegen tus datos personales. Tu correo se usa únicamente para autenticación y puedes solicitar su acceso, corrección o eliminación a través del canal de soporte de Deuda Clara.',
+      'Los datos financieros permanecen en tu dispositivo y puedes eliminarlos en cualquier momento desde Ajustes.',
     ],
   },
   {
@@ -81,7 +84,7 @@ export default function PrivacyScreen() {
             Privacidad desde el primer día
           </Text>
           <Text style={[styles.bannerSubtitle, { color: colors.textSecondary }]}>
-            Sin cuentas, sin banco conectado y sin publicidad.
+            Tu cuenta protege el acceso. Tus datos financieros se quedan en tu teléfono.
           </Text>
         </View>
       </View>
@@ -102,7 +105,7 @@ export default function PrivacyScreen() {
 
       <View style={[styles.footer, { borderTopColor: colors.border }]}>
         <Text style={[styles.footerText, { color: colors.textMuted }]}>
-          Última actualización: noviembre de 2026 · Versión local 1.0
+          Última actualización: noviembre de 2026 · Versión local 1.0 con acceso por correo
         </Text>
       </View>
     </StackScreen>

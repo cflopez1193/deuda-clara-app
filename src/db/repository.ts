@@ -15,6 +15,7 @@ import type {
 
 interface ProfileRow {
   id: number;
+  authUserId: string | null;
   name: string;
   monthlyIncome: number;
   extraDebtPayment: number;
@@ -64,7 +65,7 @@ interface DebtRow {
 }
 
 const PROFILE_SELECT = `
-  SELECT id, name, monthly_income AS monthlyIncome,
+  SELECT id, auth_user_id AS authUserId, name, monthly_income AS monthlyIncome,
     extra_debt_payment AS extraDebtPayment,
     payoff_strategy AS payoffStrategy, currency, locale,
     onboarding_completed AS onboardingCompleted,
@@ -209,8 +210,41 @@ async function insertDebtRow(
   return id;
 }
 
+export type ProfileOwnershipResult = 'empty' | 'same' | 'claimed' | 'wiped';
+
+/**
+ * Keeps the local database bound to a single authenticated account.
+ * A legacy profile without an owner is claimed by the first user; any other
+ * account starts with a clean local database so financial data never leaks
+ * between users sharing the same phone.
+ */
+export async function ensureProfileOwnership(
+  db: SQLiteDatabase,
+  authUserId: string
+): Promise<ProfileOwnershipResult> {
+  const row = await db.getFirstAsync<{ authUserId: string | null }>(
+    'SELECT auth_user_id AS authUserId FROM profile WHERE id = 1'
+  );
+
+  if (!row) return 'empty';
+  if (row.authUserId === authUserId) return 'same';
+
+  if (row.authUserId == null) {
+    await db.runAsync(
+      'UPDATE profile SET auth_user_id = ?, updated_at = ? WHERE id = 1',
+      authUserId,
+      nowIso()
+    );
+    return 'claimed';
+  }
+
+  await resetAllData(db);
+  return 'wiped';
+}
+
 export async function createOnboarding(
   db: SQLiteDatabase,
+  authUserId: string,
   input: OnboardingInput
 ): Promise<void> {
   const timestamp = nowIso();
@@ -218,14 +252,16 @@ export async function createOnboarding(
   await db.withTransactionAsync(async () => {
     await db.runAsync(
       `INSERT INTO profile (
-        id, name, monthly_income, extra_debt_payment, payoff_strategy,
+        id, auth_user_id, name, monthly_income, extra_debt_payment, payoff_strategy,
         currency, locale, onboarding_completed, created_at, updated_at
-      ) VALUES (1, ?, ?, 0, 'avalanche', 'COP', 'es-CO', 1, ?, ?)
+      ) VALUES (1, ?, ?, ?, 0, 'avalanche', 'COP', 'es-CO', 1, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
+        auth_user_id = excluded.auth_user_id,
         name = excluded.name,
         monthly_income = excluded.monthly_income,
         onboarding_completed = 1,
         updated_at = excluded.updated_at`,
+      authUserId,
       input.name.trim(),
       Math.max(0, Math.round(input.monthlyIncome)),
       timestamp,

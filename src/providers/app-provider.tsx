@@ -15,6 +15,7 @@ import {
   createOnboarding,
   createTransaction,
   deleteTransaction,
+  ensureProfileOwnership,
   getBackup,
   getProfile,
   listCategories,
@@ -64,7 +65,11 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-export function AppProvider({ children }: PropsWithChildren) {
+interface AppProviderProps extends PropsWithChildren {
+  authUserId: string;
+}
+
+export function AppProvider({ authUserId, children }: AppProviderProps) {
   const db = useSQLiteContext();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,19 +102,25 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [db]);
 
   useEffect(() => {
-    // Initial data load from SQLite; refresh owns the loading/error state.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void refresh().catch(() => {
-      // The provider exposes the error state to the UI.
-    });
-  }, [refresh]);
+    // Bind the local database to the signed-in account before loading data.
+    // A legacy profile is claimed by the first user; a different account
+    // starts empty so local financial data is never shared across users.
+    void ensureProfileOwnership(db, authUserId)
+      .then(() => refresh())
+      .catch((cause: unknown) => {
+        const message =
+          cause instanceof Error ? cause.message : 'No se pudo preparar la información local.';
+        setError(message);
+        setLoading(false);
+      });
+  }, [authUserId, db, refresh]);
 
   const completeOnboarding = useCallback(
     async (input: OnboardingInput) => {
-      await createOnboarding(db, input);
+      await createOnboarding(db, authUserId, input);
       await refresh();
     },
-    [db, refresh]
+    [authUserId, db, refresh]
   );
 
   const saveProfile = useCallback(
