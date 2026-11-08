@@ -39,6 +39,7 @@ import type {
   ProfileUpdate,
   Transaction,
 } from '@/domain/types';
+import { refreshDebtWidget } from '@/widgets/update-debt-widget';
 
 interface AppContextValue {
   loading: boolean;
@@ -96,6 +97,7 @@ export function AppProvider({ authUserId, children }: AppProviderProps) {
       setTransactions(nextTransactions);
       setDebts(nextDebts);
       setError(null);
+      void refreshDebtWidget(nextDebts);
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : 'No se pudo cargar la información.';
       setError(message);

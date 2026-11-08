@@ -16,9 +16,7 @@ export default function TabsLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          paddingTop: 6,
-          paddingBottom: 6,
-          height: 72,
+          paddingTop: 4,
         },
         tabBarLabelStyle: {
           fontSize: 10,
@@ -28,6 +26,7 @@ export default function TabsLayout() {
         tabBarItemStyle: {
           paddingVertical: 2,
         },
+        tabBarAllowFontScaling: false,
         tabBarHideOnKeyboard: true,
         sceneStyle: {
           backgroundColor: colors.background,

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { addMonths } from 'date-fns';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -205,6 +205,13 @@ export default function HomeScreen() {
           color={colors.success}
           backgroundColor={colors.successSoft}
           onPress={() => router.push('/nuevo-movimiento?type=income')}
+        />
+        <QuickAction
+          icon="people-outline"
+          label="Crédito"
+          color={colors.info}
+          backgroundColor={colors.infoSoft}
+          onPress={() => router.push('/credito-rapido' as Href)}
         />
         <QuickAction
           icon="card-outline"

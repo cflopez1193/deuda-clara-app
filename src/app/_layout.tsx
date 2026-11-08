@@ -95,6 +95,10 @@ function AppStack() {
           options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
         />
         <Stack.Screen
+          name="credito-rapido"
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
           name="editar-deuda/[id]"
           options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
         />

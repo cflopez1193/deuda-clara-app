@@ -2,7 +2,7 @@
   "expo": {
     "name": "Deuda Clara",
     "slug": "deuda-clara",
-    "version": "1.0.0",
+    "version": "1.4.0",
     "description": "Tus deudas, con claridad. Registra, diagnostica y planifica tu salida de deudas.",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -37,7 +37,26 @@
       ],
       "expo-sqlite",
       "expo-sharing",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "DeudaClara",
+              "label": "Deuda Clara",
+              "description": "Gasto, ingreso y crédito rápido. Tus prestamistas, a un toque.",
+              "minWidth": "300dp",
+              "minHeight": "200dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 3,
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/widget-preview/deuda-clara.png",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

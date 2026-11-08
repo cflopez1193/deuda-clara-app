@@ -2,8 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { requestPinWidget } from 'react-native-android-widget';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppButton, Card, type IoniconName } from '@/components/ui/app-button';
 import { PageHeader } from '@/components/ui/page-header';
@@ -22,6 +23,7 @@ export default function SettingsScreen() {
   const [exporting, setExporting] = useState<'json' | 'csv' | null>(null);
   const [resetting, setResetting] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [addingWidget, setAddingWidget] = useState(false);
 
   const strategyLabel =
     profile?.payoffStrategy === 'snowball' ? 'Bola de nieve' : 'Avalancha';
@@ -68,6 +70,34 @@ export default function SettingsScreen() {
         },
       ]
     );
+  };
+
+  const addHomeWidget = async () => {
+    if (Platform.OS !== 'android') {
+      Alert.alert(
+        'Widget de inicio',
+        'El widget está disponible en Android. En iPhone puedes usar los accesos rápidos de la app.'
+      );
+      return;
+    }
+
+    setAddingWidget(true);
+    try {
+      const requested = await requestPinWidget({ widgetName: 'DeudaClara' });
+      if (!requested) {
+        Alert.alert(
+          'Añadir widget',
+          'Tu launcher no abrió el cuadro automático. Mantén presionado un espacio libre de la pantalla de inicio, entra a Widgets, busca Deuda Clara y arrástralo. No aparece en las notificaciones: es un widget de pantalla de inicio.'
+        );
+      }
+    } catch {
+      Alert.alert(
+        'Añadir widget',
+        'No pudimos abrir el cuadro del launcher. Mantén presionado un espacio libre de la pantalla de inicio, entra a Widgets y busca Deuda Clara.'
+      );
+    } finally {
+      setAddingWidget(false);
+    }
   };
 
   const confirmReset = () => {
@@ -208,6 +238,23 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>WIDGET DE INICIO</Text>
+        <Card style={styles.sectionCard}>
+          <SettingsRow
+            icon="apps-outline"
+            color={colors.primary}
+            title="Añadir widget a la pantalla de inicio"
+            subtitle="Gasto, ingreso y crédito rápido en un toque"
+            onPress={() => void addHomeWidget()}
+            loading={addingWidget}
+          />
+        </Card>
+        <Text style={[styles.dataSummary, { color: colors.textMuted }]}>
+          El widget vive en la pantalla de inicio, no en las notificaciones.
+        </Text>
+      </View>
+
+      <View style={styles.section}>
         <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>PRIVACIDAD Y SOPORTE</Text>
         <Card style={styles.sectionCard}>
           <SettingsRow
@@ -241,14 +288,6 @@ export default function SettingsScreen() {
             color={colors.textMuted}
             title="Sincronización en la nube"
             subtitle="Comparte tu espacio con pareja o familia"
-            badge="Próximamente"
-          />
-          <View style={[styles.separator, { backgroundColor: colors.border }]} />
-          <SettingsRow
-            icon="apps-outline"
-            color={colors.textMuted}
-            title="Widgets de inicio"
-            subtitle="Gasto del día y próximos pagos"
             badge="Próximamente"
           />
         </Card>
