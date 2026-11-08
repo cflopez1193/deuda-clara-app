@@ -16,14 +16,16 @@ export default function TabsLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          paddingTop: 5,
+          paddingTop: 4,
+          height: 62,
         },
         tabBarLabelStyle: {
-          fontSize: 10,
+          fontSize: 9,
           fontWeight: '700',
+          marginTop: 2,
         },
         tabBarItemStyle: {
-          paddingVertical: 3,
+          paddingVertical: 2,
         },
         tabBarHideOnKeyboard: true,
         sceneStyle: {

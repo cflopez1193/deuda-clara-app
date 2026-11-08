@@ -63,6 +63,7 @@ export interface Debt {
   dueDay: number;
   color: string;
   notes: string | null;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -78,6 +79,7 @@ export interface NewDebtInput {
   dueDay: number;
   color?: string;
   notes?: string | null;
+  isActive?: boolean;
 }
 
 export interface NewTransactionInput {

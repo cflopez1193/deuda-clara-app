@@ -39,7 +39,7 @@ export default function PlanScreen() {
   const [savingExtra, setSavingExtra] = useState(false);
 
   const activeDebts = useMemo(
-    () => debts.filter((debt) => debt.currentBalance > 0),
+    () => debts.filter((debt) => debt.currentBalance > 0 && debt.isActive),
     [debts]
   );
 

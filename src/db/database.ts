@@ -2,7 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import type { CategoryType } from '@/domain/types';
 
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 
 interface SeedCategory {
   id: string;
@@ -76,6 +76,7 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
         due_day INTEGER NOT NULL DEFAULT 1 CHECK (due_day BETWEEN 1 AND 31),
         color TEXT NOT NULL,
         notes TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         deleted_at TEXT
@@ -111,6 +112,13 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     await db.execAsync(`
       ALTER TABLE profile ADD COLUMN auth_user_id TEXT;
       PRAGMA user_version = 2;
+    `);
+  }
+
+  if (currentVersion < 3) {
+    await db.execAsync(`
+      ALTER TABLE debts ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1;
+      PRAGMA user_version = 3;
     `);
   }
 

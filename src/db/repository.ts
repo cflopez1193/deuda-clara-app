@@ -60,6 +60,7 @@ interface DebtRow {
   dueDay: number;
   color: string;
   notes: string | null;
+  isActive: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -88,7 +89,7 @@ const DEBT_SELECT = `
   SELECT id, name, creditor, type,
     original_balance AS originalBalance, current_balance AS currentBalance,
     annual_rate_bps AS annualRateBps, minimum_payment AS minimumPayment,
-    due_day AS dueDay, color, notes,
+    due_day AS dueDay, color, notes, is_active AS isActive,
     created_at AS createdAt, updated_at AS updatedAt
   FROM debts
 `;
@@ -102,7 +103,7 @@ function mapProfile(row: ProfileRow | null): Profile | null {
 }
 
 function mapDebt(row: DebtRow): Debt {
-  return { ...row };
+  return { ...row, isActive: row.isActive === 1 };
 }
 
 function nowIso(): string {
@@ -190,8 +191,8 @@ async function insertDebtRow(
     `INSERT INTO debts (
       id, name, creditor, type, original_balance, current_balance,
       annual_rate_bps, minimum_payment, due_day, color, notes,
-      created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      is_active, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     id,
     input.name.trim(),
     input.creditor?.trim() || null,
@@ -203,6 +204,7 @@ async function insertDebtRow(
     clampDueDay(input.dueDay),
     input.color ?? '#0E7C66',
     input.notes?.trim() || null,
+    input.isActive === false ? 0 : 1,
     timestamp,
     timestamp
   );
@@ -374,7 +376,7 @@ export async function updateDebt(
     `UPDATE debts SET
       name = ?, creditor = ?, type = ?, original_balance = ?, current_balance = ?,
       annual_rate_bps = ?, minimum_payment = ?, due_day = ?, color = ?, notes = ?,
-      updated_at = ?
+      is_active = ?, updated_at = ?
      WHERE id = ? AND deleted_at IS NULL`,
     input.name.trim(),
     input.creditor?.trim() || null,
@@ -386,9 +388,54 @@ export async function updateDebt(
     clampDueDay(input.dueDay),
     input.color ?? '#0E7C66',
     input.notes?.trim() || null,
+    input.isActive === false ? 0 : 1,
     nowIso(),
     debtId
   );
+}
+
+export async function toggleDebtActive(
+  db: SQLiteDatabase,
+  debtId: string,
+  isActive: boolean
+): Promise<void> {
+  await db.runAsync(
+    `UPDATE debts SET is_active = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL`,
+    isActive ? 1 : 0,
+    nowIso(),
+    debtId
+  );
+}
+
+export async function addDebtCredit(
+  db: SQLiteDatabase,
+  debtId: string,
+  amount: number
+): Promise<void> {
+  const timestamp = nowIso();
+  const applied = Math.max(0, Math.round(amount));
+  if (applied <= 0) throw new Error('El monto debe ser mayor que cero.');
+
+  await db.withTransactionAsync(async () => {
+    const debt = await db.getFirstAsync<DebtRow>(
+      `${DEBT_SELECT} WHERE id = ? AND deleted_at IS NULL`,
+      debtId
+    );
+    if (!debt) throw new Error('La deuda no existe.');
+
+    await db.runAsync(
+      `UPDATE debts SET current_balance = current_balance + ?, updated_at = ? WHERE id = ?`,
+      applied,
+      timestamp,
+      debtId
+    );
+
+    // Also update original balance if it's less than current
+    await db.runAsync(
+      `UPDATE debts SET original_balance = current_balance WHERE id = ? AND original_balance < current_balance`,
+      debtId
+    );
+  });
 }
 
 export async function registerDebtPayment(

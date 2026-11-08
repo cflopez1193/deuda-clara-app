@@ -31,9 +31,10 @@ import { useApp } from '@/providers/app-provider';
 export default function DebtDetailScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const { colors } = useAppTheme();
-  const { debts, transactions, payDebt, removeDebt } = useApp();
+  const { debts, transactions, payDebt, addCredit, removeDebt } = useApp();
   const now = useMemo(() => new Date(), []);
   const [showPayment, setShowPayment] = useState(false);
+  const [showCredit, setShowCredit] = useState(false);
 
   const debt = debts.find((current) => current.id === params.id);
   const debtPayments = useMemo(
@@ -85,6 +86,13 @@ export default function DebtDetailScreen() {
     );
   };
 
+  const handleCredit = async (amount: number, note: string) => {
+    await addCredit(debt.id, amount);
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowCredit(false);
+    Alert.alert('Crédito agregado', `Se agregaron ${formatMoney(amount)} a ${debt.name}.`);
+  };
+
   const confirmDelete = () => {
     Alert.alert(
       'Eliminar deuda',
@@ -131,12 +139,21 @@ export default function DebtDetailScreen() {
             fullWidth
           />
         ) : (
-          <AppButton
-            label="Registrar pago"
-            icon="add"
-            onPress={() => setShowPayment(true)}
-            fullWidth
-          />
+          <View style={styles.footerButtons}>
+            <AppButton
+              label="Registrar pago"
+              icon="add"
+              onPress={() => setShowPayment(true)}
+              fullWidth
+            />
+            <AppButton
+              label="Añadir crédito"
+              icon="trending-up-outline"
+              variant="secondary"
+              onPress={() => setShowCredit(true)}
+              fullWidth
+            />
+          </View>
         )
       }>
       <LinearGradient
@@ -284,6 +301,14 @@ export default function DebtDetailScreen() {
           onPay={handlePayment}
         />
       ) : null}
+
+      {showCredit ? (
+        <CreditModal
+          debt={debt}
+          onClose={() => setShowCredit(false)}
+          onCredit={handleCredit}
+        />
+      ) : null}
     </StackScreen>
   );
 }
@@ -330,6 +355,123 @@ function PaymentHistoryRow({ payment, isFirst }: { payment: Transaction; isFirst
         - {formatMoney(payment.amount)}
       </Text>
     </View>
+  );
+}
+
+function CreditModal({
+  debt,
+  onClose,
+  onCredit,
+}: {
+  debt: Debt;
+  onClose: () => void;
+  onCredit: (amount: number, note: string) => Promise<void>;
+}) {
+  const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const [amount, setAmount] = useState(0);
+  const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async () => {
+    if (amount <= 0) {
+      setError('El monto debe ser mayor que cero.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await onCredit(amount, note);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : 'No se pudo agregar el crédito.';
+      Alert.alert('Algo salió mal', message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal
+      visible
+      transparent
+      animationType="slide"
+      onRequestClose={() => {
+        if (!saving) onClose();
+      }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.modalRoot}>
+        <Pressable
+          style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
+          onPress={() => {
+            if (!saving) onClose();
+          }}
+        />
+        <View
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: colors.background,
+              paddingBottom: insets.bottom + spacing.lg,
+            },
+          ]}>
+          <View style={styles.sheetHandle} />
+          <View style={styles.sheetHeader}>
+            <View>
+              <Text style={[styles.sheetTitle, { color: colors.text }]}>Añadir crédito</Text>
+              <Text style={[styles.sheetSubtitle, { color: colors.textSecondary }]}>
+                {debt.name} · saldo actual {formatMoney(debt.currentBalance)}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar"
+              disabled={saving}
+              onPress={onClose}
+              style={[styles.closeButton, { backgroundColor: colors.surfaceMuted }]}>
+              <Ionicons name="close" size={20} color={colors.text} />
+            </Pressable>
+          </View>
+
+          <MoneyField
+            label="Monto del crédito"
+            value={amount}
+            onChange={(value) => {
+              setAmount(value);
+              if (error) setError(null);
+            }}
+            emphasized
+            autoFocus
+          />
+          {error ? <Text style={[styles.paymentError, { color: colors.danger }]}>{error}</Text> : null}
+          <TextField
+            label="Nota (opcional)"
+            value={note}
+            onChangeText={setNote}
+            placeholder="Ej. Faltaron 5.000 en la tienda"
+            icon="create-outline"
+          />
+
+          <View style={styles.sheetActions}>
+            <AppButton
+              label="Cancelar"
+              variant="ghost"
+              onPress={onClose}
+              disabled={saving}
+              style={styles.sheetButton}
+            />
+            <AppButton
+              label="Añadir crédito"
+              icon="trending-up-outline"
+              onPress={() => void submit()}
+              loading={saving}
+              disabled={saving}
+              style={styles.sheetButton}
+            />
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
@@ -741,5 +883,8 @@ const styles = StyleSheet.create({
   },
   sheetButton: {
     flex: 1,
+  },
+  footerButtons: {
+    gap: 8,
   },
 });

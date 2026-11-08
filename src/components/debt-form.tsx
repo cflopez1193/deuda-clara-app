@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
 import {
@@ -52,6 +52,7 @@ export function DebtForm({ title, submitLabel, initialDebt, onSubmit }: DebtForm
   const [monthsText, setMonthsText] = useState('');
   const [dueDayText, setDueDayText] = useState(String(initialDebt?.dueDay ?? 15));
   const [notes, setNotes] = useState(initialDebt?.notes ?? '');
+  const [isActive, setIsActive] = useState(initialDebt?.isActive ?? true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -93,6 +94,7 @@ export function DebtForm({ title, submitLabel, initialDebt, onSubmit }: DebtForm
         dueDay: Number.parseInt(dueDayText, 10),
         color: debtColors[type],
         notes: notes.trim() || null,
+        isActive,
       });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (cause) {
@@ -211,6 +213,21 @@ export function DebtForm({ title, submitLabel, initialDebt, onSubmit }: DebtForm
         maxLength={280}
       />
 
+      <View style={[styles.toggleRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={styles.toggleText}>
+          <Text style={[styles.toggleLabel, { color: colors.text }]}>Deuda activa</Text>
+          <Text style={[styles.toggleHint, { color: colors.textMuted }]}>
+            Las deudas inactivas no se incluyen en el plan de pago.
+          </Text>
+        </View>
+        <Switch
+          value={isActive}
+          onValueChange={setIsActive}
+          trackColor={{ false: colors.border, true: colors.primarySoft }}
+          thumbColor={isActive ? colors.primary : colors.textMuted}
+        />
+      </View>
+
       <View style={[styles.tip, { backgroundColor: colors.warningSoft }]}>
         <Ionicons name="alert-circle-outline" size={18} color={colors.warning} />
         <Text style={[styles.tipText, { color: colors.textSecondary }]}>
@@ -250,6 +267,27 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     borderRadius: radius.md,
     padding: spacing.md,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  toggleText: {
+    flex: 1,
+    gap: 2,
+  },
+  toggleLabel: {
+    fontSize: typography.body,
+    fontWeight: '700',
+  },
+  toggleHint: {
+    fontSize: typography.tiny,
+    lineHeight: 16,
   },
   tipText: {
     flex: 1,

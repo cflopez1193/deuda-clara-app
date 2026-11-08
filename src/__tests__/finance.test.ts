@@ -27,6 +27,7 @@ function makeDebt(overrides: Partial<Debt> = {}): Debt {
     dueDay: 10,
     color: '#E76F51',
     notes: null,
+    isActive: true,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,

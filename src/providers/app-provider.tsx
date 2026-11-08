@@ -22,6 +22,8 @@ import {
   listDebts,
   listTransactions,
   registerDebtPayment,
+  addDebtCredit,
+  toggleDebtActive as toggleDebtActiveRepo,
   resetAllData,
   updateDebt,
   updateProfile,
@@ -58,6 +60,8 @@ interface AppContextValue {
     date: string,
     note?: string
   ) => Promise<number>;
+  addCredit: (debtId: string, amount: number) => Promise<void>;
+  toggleDebtActive: (debtId: string, isActive: boolean) => Promise<void>;
   removeDebt: (debtId: string) => Promise<void>;
   exportBackup: () => Promise<Backup>;
   resetData: () => Promise<void>;
@@ -174,6 +178,22 @@ export function AppProvider({ authUserId, children }: AppProviderProps) {
     [db, refresh]
   );
 
+  const addCredit = useCallback(
+    async (debtId: string, amount: number) => {
+      await addDebtCredit(db, debtId, amount);
+      await refresh();
+    },
+    [db, refresh]
+  );
+
+  const toggleDebtActive = useCallback(
+    async (debtId: string, isActive: boolean) => {
+      await toggleDebtActiveRepo(db, debtId, isActive);
+      await refresh();
+    },
+    [db, refresh]
+  );
+
   const removeDebt = useCallback(
     async (debtId: string) => {
       await archiveDebt(db, debtId);
@@ -205,6 +225,8 @@ export function AppProvider({ authUserId, children }: AppProviderProps) {
       addDebt,
       editDebt,
       payDebt,
+      addCredit,
+      toggleDebtActive,
       removeDebt,
       exportBackup,
       resetData,
@@ -224,6 +246,8 @@ export function AppProvider({ authUserId, children }: AppProviderProps) {
       addDebt,
       editDebt,
       payDebt,
+      addCredit,
+      toggleDebtActive,
       removeDebt,
       exportBackup,
       resetData,

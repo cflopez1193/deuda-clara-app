@@ -29,8 +29,9 @@ export default function DebtsScreen() {
   const { debts, transactions, profile } = useApp();
   const now = useMemo(() => new Date(), []);
 
-  const activeDebts = debts.filter((debt) => debt.currentBalance > 0);
-  const paidDebts = debts.filter((debt) => debt.currentBalance <= 0);
+  const activeDebts = debts.filter((debt) => debt.currentBalance > 0 && debt.isActive);
+  const inactiveDebts = debts.filter((debt) => !debt.isActive);
+  const paidDebts = debts.filter((debt) => debt.currentBalance <= 0 && debt.isActive);
   const total = totalDebt(debts);
   const original = totalOriginalDebt(debts);
   const minimum = totalMinimumPayment(debts);
@@ -180,6 +181,33 @@ export default function DebtsScreen() {
                       <Text style={[styles.paidName, { color: colors.text }]}>{debt.name}</Text>
                       <Text style={[styles.paidMeta, { color: colors.textMuted }]}>
                         Saldo en cero · {debt.creditor || 'Sin acreedor'}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                  </Card>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
+          {inactiveDebts.length > 0 ? (
+            <View style={styles.section}>
+              <SectionHeader title="Deudas inactivas" />
+              <View style={styles.debtList}>
+                {inactiveDebts.map((debt) => (
+                  <Card
+                    key={debt.id}
+                    onPress={() =>
+                      router.push({ pathname: '/deuda/[id]', params: { id: debt.id } })
+                    }
+                    style={styles.paidCard}>
+                    <View style={[styles.paidIcon, { backgroundColor: colors.surfaceMuted }]}>
+                      <Ionicons name="pause" size={19} color={colors.textMuted} />
+                    </View>
+                    <View style={styles.paidText}>
+                      <Text style={[styles.paidName, { color: colors.text }]}>{debt.name}</Text>
+                      <Text style={[styles.paidMeta, { color: colors.textMuted }]}>
+                        Inactiva · {debt.creditor || 'Sin acreedor'} · {formatMoney(debt.currentBalance)}
                       </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
