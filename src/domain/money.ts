@@ -49,3 +49,54 @@ export function monthlyRateFromBps(annualRateBps: number): number {
   const annualRate = Math.max(0, annualRateBps) / 10_000;
   return Math.pow(1 + annualRate, 1 / 12) - 1;
 }
+
+/**
+ * Calcula la tasa de interés anual efectiva (EA) implícita a partir de un
+ * saldo, una cuota mensual y un número de meses. Usa bisección sobre la
+ * fórmula de anualidad. Devuelve 0 si no se puede determinar.
+ */
+export function impliedAnnualRateBps(
+  balance: number,
+  monthlyPayment: number,
+  months: number
+): number {
+  if (balance <= 0 || monthlyPayment <= 0 || months <= 0) return 0;
+
+  // La cuota debe ser mayor que el interés mensual mínimo para amortizar.
+  // Bisección sobre la tasa mensual r.
+  const target = balance;
+  const pmt = monthlyPayment;
+  const n = months;
+
+  // f(r) = balance * r * (1+r)^n - pmt * ((1+r)^n - 1)
+  // Queremos f(r) = 0
+  function f(r: number): number {
+    if (r === 0) return balance - pmt * n;
+    const factor = Math.pow(1 + r, n);
+    return balance * r * factor - pmt * (factor - 1);
+  }
+
+  // Bisección: r entre 0 y 10% mensual (120% anual)
+  let lo = 0;
+  let hi = 0.10;
+  // Si f(lo) y f(hi) tienen el mismo signo, no hay solución en este rango
+  if (f(lo) * f(hi) > 0) {
+    // Intentar con rango más amplio
+    hi = 0.30;
+    if (f(lo) * f(hi) > 0) return 0;
+  }
+
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2;
+    if (f(mid) === 0) return Math.round((Math.pow(1 + mid, 12) - 1) * 10000);
+    if (f(lo) * f(mid) < 0) {
+      hi = mid;
+    } else {
+      lo = mid;
+    }
+  }
+
+  const monthlyRate = (lo + hi) / 2;
+  const annualRate = Math.pow(1 + monthlyRate, 12) - 1;
+  return Math.round(annualRate * 10000);
+}

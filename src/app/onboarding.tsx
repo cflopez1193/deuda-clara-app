@@ -11,6 +11,7 @@ import { radius, spacing, typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useApp } from '@/providers/app-provider';
 import { useAuth } from '@/providers/auth-provider';
+import { impliedAnnualRateBps } from '@/domain/money';
 
 const benefits: { icon: IoniconName; title: string; text: string }[] = [
   {
@@ -43,6 +44,7 @@ export default function OnboardingScreen() {
   const [balance, setBalance] = useState(0);
   const [minimumPayment, setMinimumPayment] = useState(0);
   const [annualRateBps, setAnnualRateBps] = useState(0);
+  const [monthsText, setMonthsText] = useState('');
   const [dueDayText, setDueDayText] = useState('15');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -98,6 +100,12 @@ export default function OnboardingScreen() {
     if (!validateProfile() || !validateDebt()) return;
     setSaving(true);
     try {
+      const months = Number.parseInt(monthsText, 10);
+      let finalRate = annualRateBps;
+      if (months > 0 && minimumPayment > 0 && balance > 0) {
+        const implied = impliedAnnualRateBps(balance, minimumPayment, months);
+        if (implied > 0) finalRate = implied;
+      }
       await completeOnboarding({
         name: name.trim(),
         monthlyIncome,
@@ -107,7 +115,7 @@ export default function OnboardingScreen() {
               type: 'credit_card',
               originalBalance: balance,
               currentBalance: balance,
-              annualRateBps,
+              annualRateBps: finalRate,
               minimumPayment,
               dueDay: Number.parseInt(dueDayText, 10),
               color: '#E76F51',
@@ -312,27 +320,35 @@ export default function OnboardingScreen() {
               />
               <View style={styles.twoColumns}>
                 <View style={styles.column}>
-                  <PercentField
-                    label="Tasa efectiva anual"
-                    value={annualRateBps}
-                    onChange={setAnnualRateBps}
-                    hint="Opcional. Si no la sabes, deja 0."
+                  <TextField
+                    label="Meses para pagar"
+                    value={monthsText}
+                    onChangeText={(value) => setMonthsText(value.replace(/\D/g, '').slice(0, 3))}
+                    keyboardType="number-pad"
+                    placeholder="Ej. 12, 24, 36"
+                    hint="Calculamos la tasa si lo indicas."
                   />
                 </View>
                 <View style={styles.column}>
-                  <TextField
-                    label="Día de pago"
-                    value={dueDayText}
-                    onChangeText={(value) => {
-                      setDueDayText(value.replace(/\D/g, '').slice(0, 2));
-                      if (errors.dueDay) setErrors((current) => ({ ...current, dueDay: '' }));
-                    }}
-                    keyboardType="number-pad"
-                    placeholder="15"
-                    error={errors.dueDay}
+                  <PercentField
+                    label="Tasa EA (opcional)"
+                    value={annualRateBps}
+                    onChange={setAnnualRateBps}
+                    hint="Se calcula si indicas meses."
                   />
                 </View>
               </View>
+              <TextField
+                label="Día de pago"
+                value={dueDayText}
+                onChangeText={(value) => {
+                  setDueDayText(value.replace(/\D/g, '').slice(0, 2));
+                  if (errors.dueDay) setErrors((current) => ({ ...current, dueDay: '' }));
+                }}
+                keyboardType="number-pad"
+                placeholder="15"
+                error={errors.dueDay}
+              />
             </View>
           ) : (
             <View style={[styles.skipCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>

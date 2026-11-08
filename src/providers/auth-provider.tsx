@@ -58,6 +58,33 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [offlineSession, setOfflineSession] = useState(false);
   const signingOutRef = useRef(false);
 
+  // When Supabase is not configured, create a local anonymous identity so the
+  // app works fully offline without requiring authentication.
+  useEffect(() => {
+    if (isSupabaseConfigured) return;
+    let active = true;
+    (async () => {
+      try {
+        const stored = await readStoredIdentity();
+        if (!active) return;
+        if (stored) {
+          setCachedIdentity(identityFromCache(stored));
+        } else {
+          const localId = 'local-' + Math.random().toString(36).slice(2, 10);
+          const identity: AuthUser = { id: localId, email: null };
+          setCachedIdentity(identity);
+          await saveStoredIdentity(identity);
+        }
+      } catch {
+        const localId = 'local-' + Math.random().toString(36).slice(2, 10);
+        setCachedIdentity({ id: localId, email: null });
+      } finally {
+        if (active) setInitializing(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
   useEffect(() => {
     const client = supabase;
     if (!client) return;
@@ -222,7 +249,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const user = useMemo<AuthUser | null>(() => {
     if (session) return identityFromSession(session);
-    return offlineSession ? cachedIdentity : null;
+    if (offlineSession) return cachedIdentity;
+    // In local-only mode (no Supabase), use the cached local identity.
+    if (!isSupabaseConfigured && cachedIdentity) return cachedIdentity;
+    return null;
   }, [session, offlineSession, cachedIdentity]);
 
   const value = useMemo<AuthContextValue>(

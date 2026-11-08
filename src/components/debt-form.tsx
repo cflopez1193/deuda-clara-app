@@ -14,6 +14,7 @@ import { StackScreen } from '@/components/ui/stack-screen';
 import { debtTypeLabels, radius, spacing, typography } from '@/constants/theme';
 import type { Debt, DebtType, NewDebtInput } from '@/domain/types';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { impliedAnnualRateBps } from '@/domain/money';
 
 const debtTypeOptions = Object.entries(debtTypeLabels).map(([value, label]) => ({
   value,
@@ -45,6 +46,7 @@ export function DebtForm({ title, submitLabel, initialDebt, onSubmit }: DebtForm
   const [balance, setBalance] = useState(initialDebt?.currentBalance ?? 0);
   const [minimumPayment, setMinimumPayment] = useState(initialDebt?.minimumPayment ?? 0);
   const [annualRateBps, setAnnualRateBps] = useState(initialDebt?.annualRateBps ?? 0);
+  const [monthsText, setMonthsText] = useState('');
   const [dueDayText, setDueDayText] = useState(String(initialDebt?.dueDay ?? 15));
   const [notes, setNotes] = useState(initialDebt?.notes ?? '');
   const [saving, setSaving] = useState(false);
@@ -70,13 +72,20 @@ export function DebtForm({ title, submitLabel, initialDebt, onSubmit }: DebtForm
         initialDebt?.originalBalance ?? 0,
         balance
       );
+      // Si el usuario proporciona meses + cuota, calcular el EA implícito.
+      const months = Number.parseInt(monthsText, 10);
+      let finalRate = annualRateBps;
+      if (months > 0 && minimumPayment > 0 && balance > 0) {
+        const implied = impliedAnnualRateBps(balance, minimumPayment, months);
+        if (implied > 0) finalRate = implied;
+      }
       await onSubmit({
         name: name.trim(),
         creditor: creditor.trim() || null,
         type,
         originalBalance,
         currentBalance: balance,
-        annualRateBps,
+        annualRateBps: finalRate,
         minimumPayment,
         dueDay: Number.parseInt(dueDayText, 10),
         color: debtColors[type],
@@ -167,12 +176,28 @@ export function DebtForm({ title, submitLabel, initialDebt, onSubmit }: DebtForm
         </View>
       </View>
 
-      <PercentField
-        label="Tasa efectiva anual (EA)"
-        value={annualRateBps}
-        onChange={setAnnualRateBps}
-        hint="Si no la conoces, deja 0. El plan se calculará sin intereses."
-      />
+      <View style={styles.twoColumns}>
+        <View style={styles.column}>
+          <TextField
+            label="Meses para pagar"
+            value={monthsText}
+            onChangeText={(value) => {
+              setMonthsText(value.replace(/\D/g, '').slice(0, 3));
+            }}
+            keyboardType="number-pad"
+            placeholder="Ej. 12, 24, 36"
+            hint="Si lo sabes, calculamos la tasa automáticamente."
+          />
+        </View>
+        <View style={styles.column}>
+          <PercentField
+            label="Tasa EA (opcional)"
+            value={annualRateBps}
+            onChange={setAnnualRateBps}
+            hint="Se calcula si indicas meses."
+          />
+        </View>
+      </View>
 
       <TextField
         label="Notas (opcional)"
