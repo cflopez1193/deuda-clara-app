@@ -9,6 +9,9 @@ export type DebtType =
   | 'consumer_loan'
   | 'vehicle'
   | 'mortgage'
+  | 'microcredit'
+  | 'store_loan'
+  | 'personal_loan'
   | 'informal'
   | 'family'
   | 'other';
